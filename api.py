@@ -248,7 +248,7 @@ async def register(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=400, detail="用户已存在")
     # 创建用户
     db.create_user(username=form_data.username, password=form_data.password)
-    return BaseResponse(200, "注册成功")
+    return BaseResponse(code=200, msg="注册成功")
 
 
 ##----- 需要进行登录拦截的接口 -----
@@ -290,7 +290,7 @@ async def create_conversation(current_user: User = Depends(get_current_user)):
     if not current_user:
         raise credentials_exception
     conv_id = db.create_conversation(user_id=current_user.user_id)
-    return BaseResponse(200, "更新成功, 创建会话conv_id:{}, 默认标题为'新的会话'".format(conv_id))
+    return BaseResponse(code=200, msg="更新成功, 创建会话conv_id:{}, 默认标题为'新的会话'".format(conv_id))
     # return {"code": 200, "msg": "创建成功", "data": {"conv_id": conv_id}}
 
 
@@ -303,7 +303,7 @@ async def update_conversation(
     if not current_user:
         raise credentials_exception
     db.update_conversation(conv_id=conv_id, title=title)
-    return BaseResponse(200, "更新成功")
+    return BaseResponse(code=200, msg="更新成功")
 
 
 # 删除会话
@@ -315,7 +315,7 @@ async def delete_conversation(
     if not current_user:
         raise credentials_exception
     db.delete_conversation(conv_id=conv_id)
-    return BaseResponse(200, "删除成功")
+    return BaseResponse(code=200, msg="删除成功")
     # return {"code": 200, "msg": "删除成功"}
 
 
@@ -334,7 +334,7 @@ async def create_message(
     db.create_message(
         conv_id=conv_id, role=role, content=content, content_type=content_type
     )
-    return BaseResponse(200, "创建成功")
+    return BaseResponse(code=200, msg="创建成功")
 
 
 ###############################  NEW #################################
