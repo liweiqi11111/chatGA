@@ -273,7 +273,7 @@ async def get_conversations(
 
 
 # 根据会话id获取会话信息，并根据创建时间进行排序 conversation/1
-@app.get("/conversation/{conv_id}", response_model=MessageResponse)
+@app.get("/conversation/", response_model=MessageResponse)
 async def get_messages(conv_id: int, current_user: User = Depends(get_current_user)):
     # 登录拦截
     if not current_user:
@@ -295,7 +295,7 @@ async def create_conversation(current_user: User = Depends(get_current_user)):
 
 
 # 更新会话
-@app.put("/conversation/{conv_id}", response_model=BaseResponse)
+@app.put("/conversation/", response_model=BaseResponse)
 async def update_conversation(
     conv_id: int, title: str, current_user: User = Depends(get_current_user)
 ):
@@ -307,7 +307,7 @@ async def update_conversation(
 
 
 # 删除会话
-@app.delete("/conversation/{conv_id}", response_model=BaseResponse)
+@app.delete("/conversation/", response_model=BaseResponse)
 async def delete_conversation(
     conv_id: int, current_user: User = Depends(get_current_user)
 ):
