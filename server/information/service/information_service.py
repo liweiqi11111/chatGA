@@ -8,9 +8,11 @@ from server.db.repository.conversation_repository import (
 from server.db.repository.message_repository import (
     get_messages, create_message, delete_messages)
 
-
+from server.db.session import with_session
 
 class InformationService():
+    
+    @with_session
     def get_user(self, username: str):
         user = get_user(username)
         if not user:
