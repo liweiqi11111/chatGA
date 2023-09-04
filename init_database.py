@@ -31,6 +31,8 @@ if __name__ == "__main__":
     else:
         print("filling kb infos to database")
         for f in os.listdir(KB_ROOT_PATH):
+            if not os.path.isdir(os.path.join(KB_ROOT_PATH, f)):
+                continue
             user_id = int(f)
             for kb in list_kbs_from_folder(user_id):
                 folder2db(user_id, kb, "fill_info_only")
