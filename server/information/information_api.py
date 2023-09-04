@@ -8,7 +8,7 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
 from server.utils import BaseResponse, ListResponse
-from information.service.information_service import InformationService
+from server.information.service.information_service import InformationService
 from server.information.User import User
 
 # 创建用于JWT令牌签名的随机密钥：openssl rand -hex 32
