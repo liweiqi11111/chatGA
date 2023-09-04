@@ -28,7 +28,7 @@ def create_user(session, username: str, password: str):
     if user:
         return False
     hashed_password = pwd_context.hash(password)
-    user = UserInDBModel(username=username, hashed_password=hashed_password)
+    user = UserInDBModel(username=username, password=hashed_password)
     session.add(user)
     return True
 
