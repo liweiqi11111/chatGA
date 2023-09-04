@@ -15,7 +15,7 @@ def get_user(session, username: str):
 
 @with_session
 def authenticate_user(session, username: str, password: str):
-    user = get_user(username)
+    user = session.query(UserInDBModel).filter_by(username=username).first()
     if not user:
         return False
     if not pwd_context.verify(password, user.password):
