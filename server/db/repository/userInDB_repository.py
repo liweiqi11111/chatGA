@@ -15,7 +15,7 @@ def get_user(session, username: str):
 
 @with_session
 def authenticate_user(session, username: str, password: str):
-    user = get_user(session, username)
+    user = get_user(username)
     if not user:
         return False
     if not pwd_context.verify(password, user.hashed_password):
@@ -24,7 +24,7 @@ def authenticate_user(session, username: str, password: str):
 
 @with_session
 def create_user(session, username: str, password: str):
-    user = get_user(session, username)
+    user = get_user(username)
     if user:
         return False
     hashed_password = pwd_context.hash(password)
