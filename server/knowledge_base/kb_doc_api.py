@@ -9,6 +9,10 @@ import json
 from server.knowledge_base.kb_service.base import KBServiceFactory
 from typing import List, Dict
 from langchain.docstore.document import Document
+from fastapi import Depends
+
+from server.information.User import User
+from server.information.information_api import get_current_user
 
 
 class DocumentWithScore(Document):
@@ -19,8 +23,10 @@ def search_docs(query: str = Body(..., description="用户输入", examples=["�
                 knowledge_base_name: str = Body(..., description="知识库名称", examples=["samples"]),
                 top_k: int = Body(VECTOR_SEARCH_TOP_K, description="匹配向量数"),
                 score_threshold: float = Body(SCORE_THRESHOLD, description="知识库匹配相关度阈值，取值范围在0-1之间，SCORE越小，相关度越高，取到1相当于不筛选，建议设置在0.5左右", ge=0, le=1),
+                current_user: User = Depends(get_current_user)
                 ) -> List[DocumentWithScore]:
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+    user_id = current_user.user_id
+    kb = KBServiceFactory.get_service_by_name(user_id=user_id, kb_name=knowledge_base_name)
     if kb is None:
         return {"code": 404, "msg": f"未找到知识库 {knowledge_base_name}", "docs": []}
     docs = kb.search_docs(query, top_k, score_threshold)
@@ -30,13 +36,15 @@ def search_docs(query: str = Body(..., description="用户输入", examples=["�
 
 
 async def list_docs(
-    knowledge_base_name: str
+    knowledge_base_name: str,
+    current_user: User = Depends(get_current_user)
 ):
+    user_id = current_user.user_id
     if not validate_kb_name(knowledge_base_name):
         return ListResponse(code=403, msg="Don't attack me", data=[])
 
     knowledge_base_name = urllib.parse.unquote(knowledge_base_name)
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+    kb = KBServiceFactory.get_service_by_name(user_id=user_id, kb_name=knowledge_base_name)
     if kb is None:
         return ListResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}", data=[])
     else:
@@ -47,17 +55,20 @@ async def list_docs(
 async def upload_doc(file: UploadFile = File(..., description="上传文件"),
                      knowledge_base_name: str = Form(..., description="知识库名称", examples=["kb1"]),
                      override: bool = Form(False, description="覆盖已有文件"),
+                     current_user: User = Depends(get_current_user)
                      ):
+    user_id = current_user.user_id
     if not validate_kb_name(knowledge_base_name):
         return BaseResponse(code=403, msg="Don't attack me")
 
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+    kb = KBServiceFactory.get_service_by_name(user_id=user_id,kb_name=knowledge_base_name)
     if kb is None:
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
     file_content = await file.read()  # 读取上传文件的内容
 
-    kb_file = KnowledgeFile(filename=file.filename,
+    kb_file = KnowledgeFile(user_id=user_id,
+                            filename=file.filename,
                             knowledge_base_name=knowledge_base_name)
 
     if (os.path.exists(kb_file.filepath)
@@ -81,18 +92,21 @@ async def upload_doc(file: UploadFile = File(..., description="上传文件"),
 async def delete_doc(knowledge_base_name: str = Body(..., examples=["samples"]),
                      doc_name: str = Body(..., examples=["file_name.md"]),
                      delete_content: bool = Body(False),
+                     current_user: User = Depends(get_current_user)
                     ):
+    user_id = current_user.user_id
     if not validate_kb_name(knowledge_base_name):
         return BaseResponse(code=403, msg="Don't attack me")
 
     knowledge_base_name = urllib.parse.unquote(knowledge_base_name)
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+    kb = KBServiceFactory.get_service_by_name(user_id=user_id, kb_name=knowledge_base_name)
     if kb is None:
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
     if not kb.exist_doc(doc_name):
         return BaseResponse(code=404, msg=f"未找到文件 {doc_name}")
-    kb_file = KnowledgeFile(filename=doc_name,
+    kb_file = KnowledgeFile(user_id=user_id,
+                            filename=doc_name,
                             knowledge_base_name=knowledge_base_name)
     kb.delete_doc(kb_file, delete_content)
     return BaseResponse(code=200, msg=f"{kb_file.filename} 文件删除成功")
@@ -102,20 +116,22 @@ async def delete_doc(knowledge_base_name: str = Body(..., examples=["samples"]),
 async def update_doc(
         knowledge_base_name: str = Body(..., examples=["samples"]),
         file_name: str = Body(..., examples=["file_name"]),
+        current_user: User = Depends(get_current_user)
     ):
     '''
     更新知识库文档
     '''
+    user_id = current_user.user_id
     if not validate_kb_name(knowledge_base_name):
         return BaseResponse(code=403, msg="Don't attack me")
-
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+    
+    kb = KBServiceFactory.get_service_by_name(user_id=user_id, kb_name=knowledge_base_name)
     if kb is None:
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
-    kb_file = KnowledgeFile(filename=file_name,
+    kb_file = KnowledgeFile(user_id=user_id,
+                            filename=file_name,
                             knowledge_base_name=knowledge_base_name)
-
     if os.path.exists(kb_file.filepath):
         kb.update_doc(kb_file)
         return BaseResponse(code=200, msg=f"成功更新文件 {kb_file.filename}")
@@ -126,18 +142,21 @@ async def update_doc(
 async def download_doc(
         knowledge_base_name: str = Query(..., examples=["samples"]),
         file_name: str = Query(..., examples=["test.txt"]),
+        current_user: User = Depends(get_current_user)
     ):
     '''
     下载知识库文档
     '''
+    user_id = current_user.user_id
     if not validate_kb_name(knowledge_base_name):
         return BaseResponse(code=403, msg="Don't attack me")
 
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+    kb = KBServiceFactory.get_service_by_name(user_id=user_id, kb_name=knowledge_base_name)
     if kb is None:
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
-    kb_file = KnowledgeFile(filename=file_name,
+    kb_file = KnowledgeFile(user_id=user_id,
+                            filename=file_name,
                             knowledge_base_name=knowledge_base_name)
 
     if os.path.exists(kb_file.filepath):
@@ -156,6 +175,7 @@ async def recreate_vector_store(
         allow_empty_kb: bool = Body(True),
         vs_type: str = Body(DEFAULT_VS_TYPE),
         embed_model: str = Body(EMBEDDING_MODEL),
+        current_user: User = Depends(get_current_user)
     ):
     '''
     recreate vector store from the content.
@@ -163,7 +183,8 @@ async def recreate_vector_store(
     by default, get_service_by_name only return knowledge base in the info.db and having document files in it.
     set allow_empty_kb to True make it applied on empty knowledge base which it not in the info.db or having no documents.
     '''
-    kb = KBServiceFactory.get_service(knowledge_base_name, vs_type, embed_model)
+    user_id = current_user.user_id
+    kb = KBServiceFactory.get_service(user_id, knowledge_base_name, vs_type, embed_model)
     if not kb.exists() and not allow_empty_kb:
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 

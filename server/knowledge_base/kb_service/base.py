@@ -10,7 +10,7 @@ from server.db.repository.knowledge_base_repository import (
 )
 from server.db.repository.knowledge_file_repository import (
     add_doc_to_db, delete_file_from_db, delete_files_from_db, doc_exists,
-    list_docs_from_db, get_file_detail, delete_file_from_db
+    list_docs_from_db, get_file_detail, 
 )
 
 from configs.model_config import (kbs_config, VECTOR_SEARCH_TOP_K, SCORE_THRESHOLD,
@@ -32,13 +32,15 @@ class SupportedVSType:
 class KBService(ABC):
 
     def __init__(self,
+                 user_id: int,
                  knowledge_base_name: str,
                  embed_model: str = EMBEDDING_MODEL,
                  ):
+        self.user_id = user_id
         self.kb_name = knowledge_base_name
         self.embed_model = embed_model
-        self.kb_path = get_kb_path(self.kb_name)
-        self.doc_path = get_doc_path(self.kb_name)
+        self.kb_path = get_kb_path(self.user_id, self.kb_name)
+        self.doc_path = get_doc_path(self.user_id, self.kb_name)
         self.do_init()
 
     def _load_embeddings(self, embed_device: str = EMBEDDING_DEVICE) -> Embeddings:
@@ -51,7 +53,7 @@ class KBService(ABC):
         if not os.path.exists(self.doc_path):
             os.makedirs(self.doc_path)
         self.do_create_kb()
-        status = add_kb_to_db(self.kb_name, self.vs_type(), self.embed_model)
+        status = add_kb_to_db(self.user_id, self.kb_name, self.vs_type(), self.embed_model)
         return status
 
     def clear_vs(self):
@@ -59,7 +61,7 @@ class KBService(ABC):
         删除向量库中所有内容
         """
         self.do_clear_vs()
-        status = delete_files_from_db(self.kb_name)
+        status = delete_files_from_db(self.user_id, self.kb_name)
         return status
 
 
@@ -68,7 +70,7 @@ class KBService(ABC):
         删除知识库
         """
         self.do_drop_kb()
-        status = delete_kb_from_db(self.kb_name)
+        status = delete_kb_from_db(self.user_id, self.kb_name)
         return status
 
     def add_doc(self, kb_file: KnowledgeFile):
@@ -104,10 +106,11 @@ class KBService(ABC):
         
     def exist_doc(self, file_name: str):
         return doc_exists(KnowledgeFile(knowledge_base_name=self.kb_name,
+                                        user_id=self.user_id,
                                         filename=file_name))
 
     def list_docs(self):
-        return list_docs_from_db(self.kb_name)
+        return list_docs_from_db(self.user_id, self.kb_name)
 
     def search_docs(self,
                     query: str,
@@ -130,12 +133,13 @@ class KBService(ABC):
         return list(kbs_config.keys())
 
     @classmethod
-    def list_kbs(cls):
-        return list_kbs_from_db()
+    def list_kbs(cls, user_id: int):
+        return list_kbs_from_db(user_id)
 
-    def exists(self, kb_name: str = None):
+    def exists(self, user_id: int = None, kb_name: str = None):
+        user_id = user_id or self.user_id
         kb_name = kb_name or self.kb_name
-        return kb_exists(kb_name)
+        return kb_exists(user_id=user_id, kb_name=kb_name)
 
     @abstractmethod
     def vs_type(self) -> str:
@@ -192,7 +196,8 @@ class KBService(ABC):
 class KBServiceFactory:
 
     @staticmethod
-    def get_service(kb_name: str,
+    def get_service(user_id: int,
+                    kb_name: str,
                     vector_store_type: Union[str, SupportedVSType],
                     embed_model: str = EMBEDDING_MODEL,
                     ) -> KBService:
@@ -200,37 +205,39 @@ class KBServiceFactory:
             vector_store_type = getattr(SupportedVSType, vector_store_type.upper())
         if SupportedVSType.FAISS == vector_store_type:
             from server.knowledge_base.kb_service.faiss_kb_service import FaissKBService
-            return FaissKBService(kb_name, embed_model=embed_model)
+            return FaissKBService(user_id, kb_name, embed_model=embed_model)
         if SupportedVSType.PG == vector_store_type:
             from server.knowledge_base.kb_service.pg_kb_service import PGKBService
-            return PGKBService(kb_name, embed_model=embed_model)
+            return PGKBService(user_id, kb_name, embed_model=embed_model)
         elif SupportedVSType.MILVUS == vector_store_type:
             from server.knowledge_base.kb_service.milvus_kb_service import MilvusKBService
-            return MilvusKBService(kb_name, embed_model=embed_model) # other milvus parameters are set in model_config.kbs_config
+            return MilvusKBService(user_id, kb_name, embed_model=embed_model) # other milvus parameters are set in model_config.kbs_config
         elif SupportedVSType.DEFAULT == vector_store_type: # kb_exists of default kbservice is False, to make validation easier.
             from server.knowledge_base.kb_service.default_kb_service import DefaultKBService
-            return DefaultKBService(kb_name)
+            return DefaultKBService(user_id, kb_name)
 
     @staticmethod
-    def get_service_by_name(kb_name: str
+    def get_service_by_name(kb_name: str,
+                            user_id: int,
                             ) -> KBService:
-        _, vs_type, embed_model = load_kb_from_db(kb_name)
-        if vs_type is None and os.path.isdir(get_kb_path(kb_name)): # faiss knowledge base not in db
+        _, vs_type, embed_model = load_kb_from_db(user_id=user_id, kb_name=kb_name)
+        if vs_type is None and os.path.isdir(get_kb_path(user_id, kb_name)): # faiss knowledge base not in db
             vs_type = "faiss"
-        return KBServiceFactory.get_service(kb_name, vs_type, embed_model)
+        return KBServiceFactory.get_service(user_id, kb_name, vs_type, embed_model)
 
     @staticmethod
-    def get_default():
-        return KBServiceFactory.get_service("default", SupportedVSType.DEFAULT)
+    def get_default(user_id: int):
+        return KBServiceFactory.get_service(user_id, "default", SupportedVSType.DEFAULT)
 
 
-def get_kb_details() -> List[Dict]:
-    kbs_in_folder = list_kbs_from_folder()
-    kbs_in_db = KBService.list_kbs()
+def get_kb_details(user_id: int) -> List[Dict]:
+    kbs_in_folder = list_kbs_from_folder(user_id)
+    kbs_in_db = KBService.list_kbs(user_id)
     result = {}
 
     for kb in kbs_in_folder:
         result[kb] = {
+            "user_id": user_id,
             "kb_name": kb,
             "vs_type": "",
             "embed_model": "",
@@ -241,7 +248,7 @@ def get_kb_details() -> List[Dict]:
         }
 
     for kb in kbs_in_db:
-        kb_detail = get_kb_detail(kb)
+        kb_detail = get_kb_detail(user_id, kb)
         if kb_detail:
             kb_detail["in_db"] = True
             if kb in result:
@@ -258,14 +265,15 @@ def get_kb_details() -> List[Dict]:
     return data
 
 
-def get_kb_doc_details(kb_name: str) -> List[Dict]:
-    kb = KBServiceFactory.get_service_by_name(kb_name)
-    docs_in_folder = list_docs_from_folder(kb_name)
+def get_kb_doc_details(user_id: int, kb_name: str) -> List[Dict]:
+    kb = KBServiceFactory.get_service_by_name(user_id=user_id, kb_name=kb_name)
+    docs_in_folder = list_docs_from_folder(user_id=user_id, kb_name=kb_name)
     docs_in_db = kb.list_docs()
     result = {}
 
     for doc in docs_in_folder:
         result[doc] = {
+            "user_id": user_id,
             "kb_name": kb_name,
             "file_name": doc,
             "file_ext": os.path.splitext(doc)[-1],
@@ -277,7 +285,7 @@ def get_kb_doc_details(kb_name: str) -> List[Dict]:
             "in_db": False,
         }
     for doc in docs_in_db:
-        doc_detail = get_file_detail(kb_name, doc)
+        doc_detail = get_file_detail(user_id=user_id, kb_name=kb_name, filename=doc)
         if doc_detail:
             doc_detail["in_db"] = True
             if doc in result:

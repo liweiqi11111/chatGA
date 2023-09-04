@@ -1,6 +1,7 @@
 from server.knowledge_base.migrate import create_tables, folder2db, recreate_all_vs, list_kbs_from_folder
-from configs.model_config import NLTK_DATA_PATH
+from configs.model_config import NLTK_DATA_PATH, KB_ROOT_PATH
 import nltk
+import os
 nltk.data.path = [NLTK_DATA_PATH] + nltk.data.path
 
 if __name__ == "__main__":
@@ -29,5 +30,7 @@ if __name__ == "__main__":
         recreate_all_vs()
     else:
         print("filling kb infos to database")
-        for kb in list_kbs_from_folder():
-            folder2db(kb, "fill_info_only")
+        for f in os.listdir(KB_ROOT_PATH):
+            user_id = int(f)
+            for kb in list_kbs_from_folder(user_id):
+                folder2db(user_id, kb, "fill_info_only")

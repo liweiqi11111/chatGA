@@ -31,25 +31,26 @@ _VECTOR_STORE_TICKS = {}
 
 @lru_cache(CACHED_VS_NUM)
 def load_vector_store(
+        user_id: int,
         knowledge_base_name: str,
         embed_model: str = EMBEDDING_MODEL,
         embed_device: str = EMBEDDING_DEVICE,
         embeddings: Embeddings = None,
         tick: int = 0,  # tick will be changed by upload_doc etc. and make cache refreshed.
 ):
-    print(f"loading vector store in '{knowledge_base_name}'.")
-    vs_path = get_vs_path(knowledge_base_name)
+    print(f"loading user:'{user_id}' vector store in '{knowledge_base_name}'.")
+    vs_path = get_vs_path(user_id, knowledge_base_name)
     if embeddings is None:
         embeddings = load_embeddings(embed_model, embed_device)
     search_index = FAISS.load_local(vs_path, embeddings, normalize_L2=True)
     return search_index
 
 
-def refresh_vs_cache(kb_name: str):
+def refresh_vs_cache(user_id: int, kb_name: str):
     """
     make vector store cache refreshed when next loading
     """
-    _VECTOR_STORE_TICKS[kb_name] = _VECTOR_STORE_TICKS.get(kb_name, 0) + 1
+    _VECTOR_STORE_TICKS[str(user_id)+kb_name] = _VECTOR_STORE_TICKS.get(str(user_id)+kb_name, 0) + 1
 
 
 class FaissKBService(KBService):
@@ -60,16 +61,16 @@ class FaissKBService(KBService):
         return SupportedVSType.FAISS
 
     @staticmethod
-    def get_vs_path(knowledge_base_name: str):
-        return os.path.join(FaissKBService.get_kb_path(knowledge_base_name), "vector_store")
+    def get_vs_path(user_id: int, knowledge_base_name: str):
+        return os.path.join(FaissKBService.get_kb_path(user_id, knowledge_base_name), "vector_store")
 
     @staticmethod
-    def get_kb_path(knowledge_base_name: str):
-        return os.path.join(KB_ROOT_PATH, knowledge_base_name)
+    def get_kb_path(user_id: int, knowledge_base_name: str):
+        return os.path.join(KB_ROOT_PATH, str(user_id), knowledge_base_name)
 
     def do_init(self):
-        self.kb_path = FaissKBService.get_kb_path(self.kb_name)
-        self.vs_path = FaissKBService.get_vs_path(self.kb_name)
+        self.kb_path = FaissKBService.get_kb_path(self.user_id, self.kb_name)
+        self.vs_path = FaissKBService.get_vs_path(self.user_id, self.kb_name)
 
     def do_create_kb(self):
         if not os.path.exists(self.vs_path):
@@ -84,9 +85,10 @@ class FaissKBService(KBService):
                   score_threshold: float = SCORE_THRESHOLD,
                   embeddings: Embeddings = None,
                   ) -> List[Document]:
-        search_index = load_vector_store(self.kb_name,
+        search_index = load_vector_store(self.user_id,
+                                         self.kb_name,
                                          embeddings=embeddings,
-                                         tick=_VECTOR_STORE_TICKS.get(self.kb_name))
+                                         tick=_VECTOR_STORE_TICKS.get(str(self.user_id)+self.kb_name))
         docs = search_index.similarity_search_with_score(query, k=top_k, score_threshold=score_threshold)
         return docs
 
@@ -105,7 +107,7 @@ class FaissKBService(KBService):
                 docs, embeddings, normalize_L2=True)  # docs 为Document列表
             torch_gc()
         vector_store.save_local(self.vs_path)
-        refresh_vs_cache(self.kb_name)
+        refresh_vs_cache(self.user_id, self.kb_name)
 
     def do_delete_doc(self,
                       kb_file: KnowledgeFile):
@@ -117,7 +119,7 @@ class FaissKBService(KBService):
                 return None
             vector_store.delete(ids)
             vector_store.save_local(self.vs_path)
-            refresh_vs_cache(self.kb_name)
+            refresh_vs_cache(self.user_id, self.kb_name)
             return True
         else:
             return None

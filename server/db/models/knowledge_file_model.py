@@ -11,6 +11,7 @@ class KnowledgeFileModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, comment='知识文件ID')
     file_name = Column(String, comment='文件名')
     file_ext = Column(String, comment='文件扩展名')
+    user_id = Column(Integer, comment='用户ID')
     kb_name = Column(String, comment='所属知识库名称')
     document_loader_name = Column(String, comment='文档加载器名称')
     text_splitter_name = Column(String, comment='文本分割器名称')

@@ -5,18 +5,18 @@ from server.knowledge_base.utils import KnowledgeFile
 
 
 @with_session
-def list_docs_from_db(session, kb_name):
-    files = session.query(KnowledgeFileModel).filter_by(kb_name=kb_name).all()
+def list_docs_from_db(session, user_id, kb_name):
+    files = session.query(KnowledgeFileModel).filter_by(user_id=user_id, kb_name=kb_name).all()
     docs = [f.file_name for f in files]
     return docs
 
 
 @with_session
 def add_doc_to_db(session, kb_file: KnowledgeFile):
-    kb = session.query(KnowledgeBaseModel).filter_by(kb_name=kb_file.kb_name).first()
+    kb = session.query(KnowledgeBaseModel).filter_by(user_id=kb_file.user_id, kb_name=kb_file.kb_name).first()
     if kb:
         # 如果已经存在该文件，则更新文件版本号
-        existing_file = session.query(KnowledgeFileModel).filter_by(file_name=kb_file.filename,
+        existing_file = session.query(KnowledgeFileModel).filter_by(user_id=kb_file.user_id, file_name=kb_file.filename,
                                                                     kb_name=kb_file.kb_name).first()
         if existing_file:
             existing_file.file_version += 1
@@ -26,6 +26,7 @@ def add_doc_to_db(session, kb_file: KnowledgeFile):
                 file_name=kb_file.filename,
                 file_ext=kb_file.ext,
                 kb_name=kb_file.kb_name,
+                user_id=kb_file.user_id,
                 document_loader_name=kb_file.document_loader_name,
                 text_splitter_name=kb_file.text_splitter_name or "SpacyTextSplitter",
             )
@@ -36,13 +37,13 @@ def add_doc_to_db(session, kb_file: KnowledgeFile):
 
 @with_session
 def delete_file_from_db(session, kb_file: KnowledgeFile):
-    existing_file = session.query(KnowledgeFileModel).filter_by(file_name=kb_file.filename,
+    existing_file = session.query(KnowledgeFileModel).filter_by(user_id=kb_file.user_id, file_name=kb_file.filename,
                                                                 kb_name=kb_file.kb_name).first()
     if existing_file:
         session.delete(existing_file)
         session.commit()
 
-        kb = session.query(KnowledgeBaseModel).filter_by(kb_name=kb_file.kb_name).first()
+        kb = session.query(KnowledgeBaseModel).filter_by(user_id=kb_file.user_id, kb_name=kb_file.kb_name).first()
         if kb:
             kb.file_count -= 1
             session.commit()
@@ -50,10 +51,10 @@ def delete_file_from_db(session, kb_file: KnowledgeFile):
 
 
 @with_session
-def delete_files_from_db(session, knowledge_base_name: str):
-    session.query(KnowledgeFileModel).filter_by(kb_name=knowledge_base_name).delete()
+def delete_files_from_db(session, user_id: int, knowledge_base_name: str):
+    session.query(KnowledgeFileModel).filter_by(user_id=user_id, kb_name=knowledge_base_name).delete()
 
-    kb = session.query(KnowledgeBaseModel).filter_by(kb_name=knowledge_base_name).first()
+    kb = session.query(KnowledgeBaseModel).filter_by(user_id=user_id, kb_name=knowledge_base_name).first()
     if kb:
         kb.file_count = 0
 
@@ -64,18 +65,21 @@ def delete_files_from_db(session, knowledge_base_name: str):
 @with_session
 def doc_exists(session, kb_file: KnowledgeFile):
     existing_file = session.query(KnowledgeFileModel).filter_by(file_name=kb_file.filename,
-                                                                kb_name=kb_file.kb_name).first()
+                                                                kb_name=kb_file.kb_name,
+                                                                user_id=kb_file.user_id).first()
     return True if existing_file else False
 
 
 @with_session
-def get_file_detail(session, kb_name: str, filename: str) -> dict:
+def get_file_detail(session, user_id: int, kb_name: str, filename: str) -> dict:
     file: KnowledgeFileModel = (session.query(KnowledgeFileModel)
-                                .filter_by(file_name=filename,
+                                .filter_by(user_id=user_id,
+                                            file_name=filename,
                                             kb_name=kb_name).first())
     if file:
         return {
             "kb_name": file.kb_name,
+            "user_id": file.user_id,
             "file_name": file.file_name,
             "file_ext": file.file_ext,
             "file_version": file.file_version,

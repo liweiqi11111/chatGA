@@ -18,24 +18,24 @@ def validate_kb_name(knowledge_base_id: str) -> bool:
         return False
     return True
 
-def get_kb_path(knowledge_base_name: str):
-    return os.path.join(KB_ROOT_PATH, knowledge_base_name)
+def get_kb_path(user_id:int, knowledge_base_name: str):
+    return os.path.join(KB_ROOT_PATH, str(user_id), knowledge_base_name)
 
-def get_doc_path(knowledge_base_name: str):
-    return os.path.join(get_kb_path(knowledge_base_name), "content")
+def get_doc_path(user_id: int, knowledge_base_name: str):
+    return os.path.join(get_kb_path(user_id, knowledge_base_name), "content")
 
-def get_vs_path(knowledge_base_name: str):
-    return os.path.join(get_kb_path(knowledge_base_name), "vector_store")
+def get_vs_path(user_id: int, knowledge_base_name: str):
+    return os.path.join(get_kb_path(user_id, knowledge_base_name), "vector_store")
 
-def get_file_path(knowledge_base_name: str, doc_name: str):
-    return os.path.join(get_doc_path(knowledge_base_name), doc_name)
+def get_file_path(user_id: int, knowledge_base_name: str, doc_name: str):
+    return os.path.join(get_doc_path(user_id, knowledge_base_name), doc_name)
 
-def list_kbs_from_folder():
-    return [f for f in os.listdir(KB_ROOT_PATH)
-            if os.path.isdir(os.path.join(KB_ROOT_PATH, f))]
+def list_kbs_from_folder(user_id: int):
+    return [f for f in os.listdir(os.path.join(KB_ROOT_PATH, str(user_id)))
+            if os.path.isdir(os.path.join(KB_ROOT_PATH, str(user_id), f))]
 
-def list_docs_from_folder(kb_name: str):
-    doc_path = get_doc_path(kb_name)
+def list_docs_from_folder(user_id:int, kb_name: str):
+    doc_path = get_doc_path(user_id, kb_name)
     return [file for file in os.listdir(doc_path)
             if os.path.isfile(os.path.join(doc_path, file))]
 
@@ -65,14 +65,16 @@ class KnowledgeFile:
     def __init__(
             self,
             filename: str,
-            knowledge_base_name: str
+            knowledge_base_name: str,
+            user_id: int,
     ):
         self.kb_name = knowledge_base_name
+        self.user_id = user_id
         self.filename = filename
         self.ext = os.path.splitext(filename)[-1].lower()
         if self.ext not in SUPPORTED_EXTS:
             raise ValueError(f"暂未支持的文件格式 {self.ext}")
-        self.filepath = get_file_path(knowledge_base_name, filename)
+        self.filepath = get_file_path(user_id, knowledge_base_name, filename)
         self.docs = None
         self.document_loader_name = get_LoaderClass(self.ext)
 

@@ -11,6 +11,10 @@ import argparse
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
+from server.information.information_api import (login_for_access_token, register,
+                                                get_conversations, get_messages, create_conversation,
+                                                update_conversation, delete_conversation, 
+                                                create_message)
 from server.chat import (chat, knowledge_base_chat, openai_chat,
                          search_engine_chat)
 from server.knowledge_base.kb_api import list_kbs, create_kb, delete_kb
@@ -45,9 +49,63 @@ def create_app():
             allow_headers=["*"],
         )
 
+    # 创建中间件，对除登录和注册的所有请求进行token验证
+    # Create middleware to verify token for all requests except login and register
+    from server.information.information_api import get_current_user
+    from server.information.information_api import credentials_exception
+    from jose import JWTError
+
+    @app.middleware("http")
+    async def auth_middleware(request, call_next):
+        if request.url.path not in ["/login", "/register"]:
+            token = request.headers["Authorization"].split(" ")[1]
+            try:
+                user = await get_current_user(token)
+            except JWTError:
+                raise credentials_exception
+        response = await call_next(request)
+        return response
+
+
     app.get("/",
             response_model=BaseResponse,
             summary="swagger 文档")(document)
+
+    # Tag: Information
+    app.post("/login", 
+                tags=["Information"],
+                summary="用户登录")(login_for_access_token)
+    
+    app.post("/register", 
+                tags=["Information"],
+                summary="用户注册")(register)
+    
+    app.get("/conversations",
+            tags=["Information"],
+            response_model=ListResponse,
+            summary="获取会话列表")(get_conversations)
+
+    app.get("/conversation",
+            tags=["Information"],
+            summary="根据conv_id获取会话中的所有消息")(get_messages)
+
+    app.post("/conversation",
+             tags=["Information"],
+             summary="创建会话")(create_conversation)
+
+    app.put("/conversation",
+            tags=["Information"],
+            summary="更新会话")(update_conversation)
+
+    app.delete("/conversation",
+            tags=["Information"],
+            summary="删除会话")(delete_conversation)            
+
+    app.post("/message",
+            tags=["Information"],
+            summary="创建消息")(create_message)
+    
+
 
     # Tag: Chat
     app.post("/chat/fastchat",

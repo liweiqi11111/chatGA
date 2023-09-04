@@ -9,6 +9,7 @@ class KnowledgeBaseModel(Base):
     """
     __tablename__ = 'knowledge_base'
     id = Column(Integer, primary_key=True, autoincrement=True, comment='知识库ID')
+    user_id = Column(Integer, comment='用户ID')
     kb_name = Column(String, comment='知识库名称')
     vs_type = Column(String, comment='嵌入模型类型')
     embed_model = Column(String, comment='嵌入模型名称')
