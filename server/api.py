@@ -57,8 +57,11 @@ def create_app():
 
     @app.middleware("http")
     async def auth_middleware(request, call_next):
-        if request.url.path not in ["/", "/login", "/register"]:
-            token = request.headers["Authorization"].split(" ")[1]
+        if request.url.path not in ["/", "/docs", "/favicon.ico",
+                                "/login", "/register"]:
+            token = request.headers.get("Authorization", None)
+            if not token:
+                raise credentials_exception
             try:
                 user = await get_current_user(token)
             except JWTError:
