@@ -11,6 +11,9 @@ from langchain.prompts.chat import ChatPromptTemplate
 from typing import List
 from server.chat.utils import History
 
+from server.information.User import User
+from server.information.information_api import get_current_user
+from fastapi import Depends
 
 def chat(query: str = Body(..., description="用户输入", examples=["恼羞成怒"]),
          history: List[History] = Body([],
@@ -20,6 +23,7 @@ def chat(query: str = Body(..., description="用户输入", examples=["恼羞成
                                            {"role": "assistant", "content": "虎头虎脑"}]]
                                        ),
          stream: bool = Body(False, description="流式输出"),
+          current_user: User = Depends(get_current_user)
          ):
     history = [History(**h) if isinstance(h, dict) else h for h in history]
 

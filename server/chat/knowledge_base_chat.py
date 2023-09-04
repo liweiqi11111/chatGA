@@ -17,6 +17,9 @@ import os
 from urllib.parse import urlencode
 from server.knowledge_base.kb_doc_api import search_docs
 
+from server.information.User import User
+from server.information.information_api import get_current_user
+from fastapi import Depends
 
 def knowledge_base_chat(query: str = Body(..., description="用户输入", examples=["你好"]),
                         knowledge_base_name: str = Body(..., description="知识库名称", examples=["samples"]),
@@ -33,6 +36,7 @@ def knowledge_base_chat(query: str = Body(..., description="用户输入", examp
                         stream: bool = Body(False, description="流式输出"),
                         local_doc_url: bool = Body(False, description="知识文件返回本地路径(true)或URL(false)"),
                         request: Request = None,
+                         current_user: User = Depends(get_current_user)
                         ):
     kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
     if kb is None:

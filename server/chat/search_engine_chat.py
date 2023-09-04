@@ -16,6 +16,9 @@ from server.chat.utils import History
 from langchain.docstore.document import Document
 import json
 
+from server.information.User import User
+from server.information.information_api import get_current_user
+from fastapi import Depends
 
 def bing_search(text, result_len=SEARCH_ENGINE_TOP_K):
     if not (BING_SEARCH_URL and BING_SUBSCRIPTION_KEY):
@@ -69,6 +72,7 @@ def search_engine_chat(query: str = Body(..., description="用户输入", exampl
                                                           "content": "虎头虎脑"}]]
                                                      ),
                        stream: bool = Body(False, description="流式输出"),
+ current_user: User = Depends(get_current_user)
                        ):
     if search_engine_name not in SEARCH_ENGINES.keys():
         return BaseResponse(code=404, msg=f"未支持搜索引擎 {search_engine_name}")

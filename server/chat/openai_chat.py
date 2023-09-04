@@ -3,7 +3,9 @@ from typing import List
 import openai
 from configs.model_config import llm_model_dict, LLM_MODEL, logger
 from pydantic import BaseModel
-
+from server.information.User import User
+from server.information.information_api import get_current_user
+from fastapi import Depends
 
 class OpenAiMessage(BaseModel):
     role: str = "user"
@@ -22,7 +24,7 @@ class OpenAiChatMsgIn(BaseModel):
     frequency_penalty: int = 0
 
 
-async def openai_chat(msg: OpenAiChatMsgIn):
+async def openai_chat(msg: OpenAiChatMsgIn,  current_user: User = Depends(get_current_user)):
     openai.api_key = llm_model_dict[LLM_MODEL]["api_key"]
     print(f"{openai.api_key=}")
     openai.api_base = llm_model_dict[LLM_MODEL]["api_base_url"]

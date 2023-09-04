@@ -36,6 +36,7 @@ class TokenData(BaseModel):
 # 配置OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+infoService = InformationService()
 
 # 创建生成新的访问令牌的工具函数
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
@@ -60,7 +61,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = InformationService.get_user(username=token_data.username)
+    user = infoService.get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -68,7 +69,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 ## 创建并返回真正的JWT访问令牌
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    status = InformationService.authenticate_user(
+    status = infoService.authenticate_user(
         username=form_data.username, password=form_data.password)
     if not status:
         raise HTTPException(
@@ -86,10 +87,10 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 # 注册接口
 async def register(form_data: OAuth2PasswordRequestForm = Depends()):
     # 查询用户是否已存在
-    if InformationService.get_user(username=form_data.username):
+    if infoService.get_user(username=form_data.username):
         raise HTTPException(status_code=400, detail="用户已存在")
     # 创建用户
-    status = InformationService.create_user(username=form_data.username, password=form_data.password)
+    status = infoService.create_user(username=form_data.username, password=form_data.password)
     if not status:
         raise HTTPException(status_code=400, detail="创建用户失败")
     return BaseResponse(code=200, msg="创建用户成功")
@@ -99,32 +100,32 @@ async def get_conversations(
     page_size: int = 10,
     current_user: User = Depends(get_current_user)
 ):    
-    conversations = InformationService.get_conversations(
+    conversations = infoService.get_conversations(
         user_id=current_user.user_id, page=page, page_size=page_size)
     return ListResponse(data=conversations) 
 
-async def get_messages(conv_id: int):
-    messages = InformationService.get_messages(conv_id=conv_id)
+async def get_messages(conv_id: int,  current_user: User = Depends(get_current_user)):
+    messages = infoService.get_messages(conv_id=conv_id)
     return ListResponse(data=messages)
 
 # 创建会话
 async def create_conversation(current_user: User = Depends(get_current_user)):
-    InformationService.create_conversation(user_id=current_user.user_id)
+    infoService.create_conversation(user_id=current_user.user_id)
     return BaseResponse(code=200, msg="创建会话成功, 默认标题为'新的会话'")
 
 
 # 更新会话
 async def update_conversation(
-    conv_id: int, title: str
+    conv_id: int, title: str,  current_user: User = Depends(get_current_user)
 ):
-    InformationService.update_conversation_title(conv_id=conv_id, title=title)
+    infoService.update_conversation_title(conv_id=conv_id, title=title)
     return BaseResponse(code=200, msg="更新成功")
 
 
 # 删除会话
 async def delete_conversation(
-    conv_id: int):
-    status = InformationService.delete_conversation(conv_id=conv_id)
+    conv_id: int,  current_user: User = Depends(get_current_user)):
+    status = infoService.delete_conversation(conv_id=conv_id)
     if not status:
         raise HTTPException(status_code=400, detail="删除失败, 会话不存在")
     return BaseResponse(code=200, msg="会话及其消息删除成功")
@@ -135,8 +136,9 @@ async def create_message(
     role: str,
     content: str,
     content_type: str,
+    current_user: User = Depends(get_current_user)
 ):
-    InformationService.create_message(
+    infoService.create_message(
         conv_id=conv_id, role=role, content=content, content_type=content_type
     )
     return BaseResponse(code=200, msg="创建成功")
