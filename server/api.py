@@ -55,19 +55,17 @@ def create_app():
     from server.information.information_api import credentials_exception
     from jose import JWTError
 
-    @app.middleware("http")
-    async def auth_middleware(request, call_next):
-        if request.url.path not in ["/", "/docs", "/favicon.ico",
-                                "/login", "/register"]:
-            token = request.headers.get("Authorization", None)
-            if not token:
-                raise credentials_exception
-            try:
-                user = await get_current_user(token)
-            except JWTError:
-                raise credentials_exception
-        response = await call_next(request)
-        return response
+#     @app.middleware("http")
+#     async def auth_middleware(request, call_next):
+#         token = request.headers.get("Authorization", None)
+#         if not token:
+#             raise credentials_exception
+#         try:
+#             user = await get_current_user(token)
+#         except JWTError:
+#             raise credentials_exception
+#         response = await call_next(request)
+#         return response
 
 
     app.get("/",
