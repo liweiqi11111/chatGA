@@ -11,6 +11,7 @@ def get_conversations(session, user_id: int, page: int = 1, page_size: int = 10)
     conversations = [{"conv_id": conversation.conv_id, "user_id": conversation.user_id, "title": conversation.title,
                       "create_time": conversation.create_time, "update_time": conversation.update_time}
                       for conversation in conversations]
+    return conversations
 
 # 创建会话，title默认为“新的会话”
 @with_session

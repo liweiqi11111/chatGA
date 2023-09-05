@@ -33,7 +33,9 @@ class ListResponse(BaseResponse):
         }
 
 class ConversationResponse(BaseResponse):
+    # 这里会报错，pydantic不支持嵌套的List[dict]类型,
     data: List[dict] = pydantic.Field(..., description="List of conversations")
+    
     class Config:
         schema_extra = {
             "example": {
