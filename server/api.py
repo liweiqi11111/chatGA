@@ -73,7 +73,7 @@ def create_app():
             summary="swagger 文档")(document)
 
     # Tag: Information
-    app.post("/login", 
+    app.post("/token", 
                 tags=["Information"],
                 summary="用户登录")(login_for_access_token)
     
