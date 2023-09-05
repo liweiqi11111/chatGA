@@ -1,17 +1,19 @@
 from server.db.models.userInDB_model import UserInDBModel
 from server.db.session import with_session
 
+from server.information.User import User
+
 from passlib.context import CryptContext   
 
 # 配置数据库连接
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @with_session
-def get_user(session, username: str):
+def get_user(session, username: str) -> User:
     user = session.query(UserInDBModel).filter_by(username=username).first()
     if not user:
         return None
-    return user
+    return User(user_id=user.user_id, username=user.username)
 
 @with_session
 def authenticate_user(session, username: str, password: str):
