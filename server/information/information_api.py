@@ -69,9 +69,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 ## 创建并返回真正的JWT访问令牌
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    status = infoService.authenticate_user(
+    s = infoService.authenticate_user(
         username=form_data.username, password=form_data.password)
-    if not status:
+    if not s:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
