@@ -7,8 +7,14 @@ def get_messages(session, conv_id: int, page: int = 1, page_size: int = 10):
     messages = session.query(MessageModel).filter_by(conv_id=conv_id).order_by(
         MessageModel.create_time.desc()).limit(page_size).offset((page - 1) * page_size).all()
     # 返回MessageModel的所有内容，以json字符串的形式
+<<<<<<< HEAD
     messages = ["{'conv_id': %d, 'role': '%s', 'content': '%s', 'content_type': '%s'}" % (message.conv_id, message.role, message.content, message.content_type)
     for message in messages]
+=======
+    messages = [json.dumps(
+        {"conv_id": message.conv_id, "role": message.role, "content": message.content, "content_type": message.content_type}) 
+                for message in messages]
+>>>>>>> 69c8bae (info.db)
     return messages
 
 # 创建消息
