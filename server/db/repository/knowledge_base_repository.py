@@ -1,6 +1,6 @@
 from server.db.models.knowledge_base_model import KnowledgeBaseModel
 from server.db.session import with_session
-
+from sqlalchemy import and_
 
 @with_session
 def add_kb_to_db(session, user_id, kb_name, vs_type, embed_model):
@@ -17,8 +17,8 @@ def add_kb_to_db(session, user_id, kb_name, vs_type, embed_model):
 
 @with_session
 def list_kbs_from_db(session, user_id: int, min_file_count: int = -1):
-    kbs = session.query(KnowledgeBaseModel.kb_name).filter_by(KnowledgeBaseModel.user_id==user_id,
-        KnowledgeBaseModel.file_count >= min_file_count).all()
+    kbs = session.query(KnowledgeBaseModel.kb_name).filter(and_(KnowledgeBaseModel.user_id==user_id,
+        KnowledgeBaseModel.file_count > min_file_count)).all()
     kbs = [kb[0] for kb in kbs]
     return kbs
 
