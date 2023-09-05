@@ -8,16 +8,14 @@ from server.db.repository.conversation_repository import (
 from server.db.repository.message_repository import (
     get_messages, create_message, delete_messages)
 
-from server.db.session import with_session
 
 class InformationService():
     
-    @with_session
     def get_user(self, username: str):
         user = get_user(username)
         if not user:
             return False
-        return User(user_id=user.user_id, username=user.username)
+        return self.convert_userDB_to_User(user)
     
     def authenticate_user(self, username: str, password: str):
         status = authenticate_user(username, password)
@@ -54,3 +52,6 @@ class InformationService():
         status = create_message(conv_id, role, content, content_type)
         return status
     
+
+    def convert_userDB_to_User(self, user):
+        return User(user_id=user.user_id, username=user.username)
