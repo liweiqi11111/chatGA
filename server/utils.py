@@ -32,6 +32,59 @@ class ListResponse(BaseResponse):
             }
         }
 
+class ConversationResponse(BaseResponse):
+    data: List[dict] = pydantic.Field(..., description="List of conversations")
+    class Config:
+        schema_extra = {
+            "example": {
+                "code": 200,
+                "msg": "获取成功",
+                "data": [
+                    {
+                        "conv_id": 2,
+                        "user_id": 9,
+                        "title": "政务问答2",
+                        "create_time": "2023-08-23T16:19:56",
+                        "update_time": "2023-08-23T16:20:00",
+                    },
+                    {
+                        "conv_id": 1,
+                        "user_id": 9,
+                        "title": "政务问答",
+                        "create_time": "2023-08-22T17:29:14",
+                        "update_time": "2023-08-22T17:29:18",
+                    },
+                ],
+            }
+        }
+
+class MessageResponse(BaseResponse):
+    data: List[dict] = pydantic.Field(..., description="List of messages")
+    class Config:
+        schema_extra = {
+            "example": {
+                "code": 200,
+                "msg": "获取成功",
+                "data": [
+                    {
+                        "msg_id": 1,
+                        "conv_id": 1,
+                        "role": "user",
+                        "content": "政务问答：请问劳动法的条例有哪些？",
+                        "content_type": "text",
+                        "create_time": "2023-08-22T17:31:32",
+                    },
+                    {
+                        "msg_id": 2,
+                        "conv_id": 1,
+                        "role": "system",
+                        "content": "劳动法是针对劳动者与用人单位之间的劳动关系，以及保障劳动者权益和维护劳动秩序的法律法规。不同国家和地区的劳动法条例可能会有所不同。以下是一些常见的劳动法方面的条例，但请注意这只是一些典型的条例，具体内容可能因地区而异：\r\n\r\n1. **就业和招聘**：\r\n   - 禁止性别歧视\r\n   - 年龄歧视规定\r\n   - 招聘过程中的平等对待\r\n\r\n2. **合同与工资**：\r\n   - 劳动合同的签订和解除\r\n   - 工资支付和调整\r\n   - 加班工资和休息日规定\r\n\r\n3. **工时与休假**：\r\n   - 工作时间和休息时间规定\r\n   - 年假和带薪休假\r\n   - 法定节假日和特殊假期\r\n\r\n4. **劳动条件和保护**：\r\n   - 安全和健康保护\r\n   - 福利待遇、社会保险和福利\r\n   - 离职、辞退和解雇程序\r\n\r\n5. **劳动争议解决**：\r\n   - 劳动争议调解和仲裁\r\n   - 法院诉讼程序\r\n\r\n6. **工会和劳动组织**：\r\n   - 工会的组织和权利\r\n   - 工会与用人单位的关系\r\n\r\n7. **特殊群体保障**：\r\n   - 女性和儿童劳工的保护\r\n   - 残疾人员的就业权益保护\r\n\r\n请注意，每个国家和地区的劳动法条例都会有所不同，特别是在不同的文化、法律和社会背景下。如果您想了解具体的劳动法条例，最好是查询您所在地区的相关官方法律法规或咨询法律专业人士。",
+                        "content_type": "text",
+                        "create_time": "2023-08-22T17:31:58",
+                    },
+                ],
+            }
+        }
 
 class ChatMessage(BaseModel):
     question: str = pydantic.Field(..., description="Question text")

@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from server.utils import BaseResponse, ListResponse
+from server.utils import BaseResponse, ListResponse, ConversationResponse, MessageResponse
 from server.information.service.information_service import InformationService
 from server.information.User import User
 
@@ -102,11 +102,11 @@ async def get_conversations(
 ):    
     conversations = infoService.get_conversations(
         user_id=current_user.user_id, page=page, page_size=page_size)
-    return ListResponse(data=conversations) 
+    return ConversationResponse(data=conversations) 
 
 async def get_messages(conv_id: int,  current_user: User = Depends(get_current_user)):
     messages = infoService.get_messages(conv_id=conv_id)
-    return ListResponse(data=messages)
+    return MessageResponse(data=messages)
 
 # 创建会话
 async def create_conversation(current_user: User = Depends(get_current_user)):
