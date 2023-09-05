@@ -6,8 +6,8 @@ from server.db.session import with_session
 def get_conversations(session, user_id: int, page: int = 1, page_size: int = 10):
     conversations = session.query(ConversationModel).filter_by(user_id=user_id).order_by(
         ConversationModel.update_time.desc()).limit(page_size).offset((page - 1) * page_size).all()
-    # 返回ConversationModel的id和标题，以json字符串的形式，不是字典形式
-    conversations = [{"conv_id": conversation.conv_id, "title": conversation.title} for conversation in conversations]
+    # 返回ConversationModel的id和标题，字符串的形式，不是字典形式
+    conversations = ["{'conv_id': %d, 'title': '%s'}" % (conversation.conv_id, conversation.title) for conversation in conversations]
     return conversations
 
 # 创建会话，title默认为“新的会话”

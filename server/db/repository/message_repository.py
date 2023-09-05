@@ -1,5 +1,6 @@
 from server.db.models.message_model import MessageModel
 from server.db.session import with_session
+import json
 
 # 根据会话id获取会话信息，并根据创建时间排序
 @with_session
@@ -7,8 +8,9 @@ def get_messages(session, conv_id: int, page: int = 1, page_size: int = 10):
     messages = session.query(MessageModel).filter_by(conv_id=conv_id).order_by(
         MessageModel.create_time.desc()).limit(page_size).offset((page - 1) * page_size).all()
     # 返回MessageModel的所有内容，以json字符串的形式
-    messages = [{"conv_id": message.conv_id, "role": message.role, "content": message.content,
-                    "content_type": message.content_type, "create_time": message.create_time} for message in messages]
+    messages = [json.dumps(
+        {"conv_id": message.conv_id, "role": message.role, "content": message.content, "content_type": message.content_type, "create_time": message.create_time}) 
+                for message in messages]
     return messages
 
 # 创建消息
