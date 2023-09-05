@@ -21,7 +21,7 @@ from server.knowledge_base.kb_api import list_kbs, create_kb, delete_kb
 from server.knowledge_base.kb_doc_api import (list_docs, upload_doc, delete_doc,
                                               update_doc, download_doc, recreate_vector_store,
                                               search_docs, DocumentWithScore)
-from server.utils import BaseResponse, ListResponse, FastAPI, MakeFastAPIOffline
+from server.utils import BaseResponse, ListResponse, FastAPI, MakeFastAPIOffline, ConversationResponse, MessageResponse
 from typing import List
 
 nltk.data.path = [NLTK_DATA_PATH] + nltk.data.path
@@ -83,11 +83,12 @@ def create_app():
     
     app.get("/conversations",
             tags=["Information"],
-            response_model=ListResponse,
+            response_model=ConversationResponse,
             summary="获取会话列表")(get_conversations)
 
     app.get("/conversation",
             tags=["Information"],
+            response_model=MessageResponse,
             summary="根据conv_id获取会话中的所有消息")(get_messages)
 
     app.post("/conversation",
