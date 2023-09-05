@@ -15,7 +15,7 @@ from server.knowledge_base.kb_service.base import KBService, KBServiceFactory
 import json
 import os
 from urllib.parse import urlencode
-from server.knowledge_base.kb_doc_api import search_docs
+from server.knowledge_base.kb_doc_api import search_docs_inner
 
 from server.information.User import User
 from server.information.information_api import get_current_user
@@ -38,7 +38,8 @@ def knowledge_base_chat(query: str = Body(..., description="用户输入", examp
                         request: Request = None,
                          current_user: User = Depends(get_current_user)
                         ):
-    kb = KBServiceFactory.get_service_by_name(knowledge_base_name)
+    user_id = current_user.user_id
+    kb = KBServiceFactory.get_service_by_name(knowledge_base_name, user_id)
     if kb is None:
         return BaseResponse(code=404, msg=f"未找到知识库 {knowledge_base_name}")
 
@@ -58,7 +59,7 @@ def knowledge_base_chat(query: str = Body(..., description="用户输入", examp
             openai_api_base=llm_model_dict[LLM_MODEL]["api_base_url"],
             model_name=LLM_MODEL
         )
-        docs = search_docs(query, knowledge_base_name, top_k, score_threshold)
+        docs = search_docs_inner(query, knowledge_base_name, top_k, score_threshold, user_id)
         context = "\n".join([doc.page_content for doc in docs])
 
         chat_prompt = ChatPromptTemplate.from_messages(

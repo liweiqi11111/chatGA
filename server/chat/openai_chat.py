@@ -39,11 +39,13 @@ async def openai_chat(msg: OpenAiChatMsgIn,  current_user: User = Depends(get_cu
         try:
             response = openai.ChatCompletion.create(**data)
             if msg.stream:
+                print(response)
                 for chunk in response.choices[0].message.content:
                     print(chunk)
                     yield chunk
             else:
                 answer = ""
+                print(response)
                 for chunk in response.choices[0].message.content:
                     answer += chunk
                 print(answer)
