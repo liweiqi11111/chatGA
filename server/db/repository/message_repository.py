@@ -6,6 +6,8 @@ from server.db.session import with_session
 def get_messages(session, conv_id: int, page: int = 1, page_size: int = 10):
     messages = session.query(MessageModel).filter_by(conv_id=conv_id).order_by(
         MessageModel.create_time.desc()).limit(page_size).offset((page - 1) * page_size).all()
+    # 返回MessageModel的内容
+    messages = [message.content for message in messages]
     return messages
 
 # 创建消息
